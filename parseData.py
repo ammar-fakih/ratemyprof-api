@@ -10,39 +10,51 @@ import re
 # with open("newMaster.json", "w") as outfile:
 #   json.dump(newMaster, outfile, indent=2)
 
-reviewDic = {}
-with open("./reviews.json", "r") as infile:
-  reviewDic = json.load(infile)
+def matchClasses(reviewDic):
+  matchedClasses = {}
+  unMatchedClasses = {}
 
+  for courseCode, reviews in reviewDic.items():
+    if courseCode.lower() in masterList:
+      realCourseCode = masterList[courseCode.lower()]["masterCourseCode"]
+      matchedClasses[realCourseCode] = reviews
+    else:
+      unMatchedClasses[courseCode] = reviews
 
-reviews = {}
-for code, course in masterList.items():
-  courseReviews = []
-  profs = set()
-  for time in course["times"]:
-    if time["professorName"] not in profs and time["professorName"] in reviewDic:
-      courseReviews += reviewDic["professorName"]
-  
-  reviews[course["masterCourseCode"]] = courseReviews
+  print("len matched classes", len(matchedClasses))
+  print("len unmacthed", len(unMatchedClasses))
 
-with open("MatchedReviews.json", "w") as outfile:
+  with open("MatchedReviews.json", "w") as outfile:
+      json.dump(matchedClasses, outfile, indent=2)
+
+  with open("UnmatchedReviews.json", "w") as outfile:
+      json.dump(unMatchedClasses, outfile, indent=2)
+
+def mapReviewsToProf(reviewDic):
+  reviews = {}
+
+  for course in masterList.values():
+    courseReviews = []
+    checkedProfs = set()
+
+    for time in course["times"]:
+      if (
+        "professorName" in time and
+        time["professorName"] not in checkedProfs and 
+        time["professorName"] in reviewDic
+        ):
+        courseReviews += reviewDic[time["professorName"]]
+        checkedProfs.add(time["professorName"])
+    
+    if len(courseReviews) > 0:
+      reviews[course["masterCourseCode"]] = courseReviews
+
+  with open("MatchedReviews.json", "w") as outfile:
     json.dump(reviews, outfile, indent=2)
-  
-# matchedClasses = {}
-# unMatchedClasses = {}
 
-# for courseCode, reviews in reviewDic.items():
-#   if courseCode.lower() in masterList:
-#     realCourseCode = masterList[courseCode.lower()]["masterCourseCode"]
-#     matchedClasses[realCourseCode] = reviews
-#   else:
-#     unMatchedClasses[courseCode] = reviews
+if __name__ == '__main__':
+  reviewDic = {}
+  with open("./reviews.json", "r") as infile:
+    reviewDic = json.load(infile)
 
-# print("len matched classes", len(matchedClasses))
-# print("len unmacthed", len(unMatchedClasses))
-
-# with open("MatchedReviews.json", "w") as outfile:
-#     json.dump(matchedClasses, outfile, indent=2)
-
-# with open("UnmatchedReviews.json", "w") as outfile:
-#     json.dump(unMatchedClasses, outfile, indent=2)
+  mapReviewsToProf(reviewDic)
